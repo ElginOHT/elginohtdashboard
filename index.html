@@ -1,0 +1,1083 @@
+
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Neighbourhood Profiles | Elgin OHT</title>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+  --purple: #6c3f99;
+  --green: #39b54a;
+  --background: #f3f2f8;
+  --border: #e3e3e9;
+  --text: #28313c;
+  --muted: #617080;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--background);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+header {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 15px 5%;
+}
+
+.header-inner {
+  max-width: 1400px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  width: 210px;
+  max-width: 100%;
+  height: auto;
+}
+
+main {
+  max-width: 1400px;
+  margin: auto;
+  padding: 35px 25px 60px;
+}
+
+h1, h2, h3 {
+  color: var(--purple);
+  line-height: 1.25;
+}
+
+h1 { font-size: 36px; margin: 10px 0; }
+h2 { font-size: 25px; margin-bottom: 8px; }
+h3 { font-size: 19px; margin-top: 0; }
+
+p { margin-top: 0; }
+
+.muted { color: var(--muted); }
+
+.eyebrow {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 27px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.section {
+  margin-top: 35px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+select {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 1px solid #c9ced4;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 15px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.kpi {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  padding: 22px;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 38px;
+}
+
+.kpi-value {
+  font-size: 30px;
+  font-weight: bold;
+  color: var(--purple);
+  margin: 8px 0;
+}
+
+.kpi-period {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, .85fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* CRITICAL MAP CONTAINMENT FIX */
+
+.map-shell {
+  position: relative;
+  width: 100%;
+  height: 450px;
+  margin: 20px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint;
+  background: #eef2f4;
+}
+
+#neighbourhoodMap {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  z-index: 0;
+}
+
+#neighbourhoodMap .leaflet-pane,
+#neighbourhoodMap .leaflet-map-pane,
+#neighbourhoodMap .leaflet-tile-pane,
+#neighbourhoodMap .leaflet-overlay-pane {
+  position: absolute;
+}
+
+#neighbourhoodMap img.leaflet-tile {
+  width: 256px !important;
+  height: 256px !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important;
+}
+
+.map-status {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend-dot {
+  width: 15px;
+  height: 15px;
+  background: var(--purple);
+  border-radius: 3px;
+}
+
+.comparison-chart {
+  margin-top: 25px;
+}
+
+.compare-row {
+  margin-bottom: 20px;
+}
+
+.compare-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.track {
+  height: 13px;
+  border-radius: 20px;
+  background: #eeeaf2;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--purple);
+  border-radius: 20px;
+}
+
+.fill.green { background: var(--green); }
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.tab {
+  padding: 14px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.tab.active {
+  background: var(--purple);
+  color: white;
+  border-color: var(--purple);
+}
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th, td {
+  padding: 13px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #f8f8fb;
+  color: var(--muted);
+}
+
+td:nth-child(2), th:nth-child(2) {
+  text-align: right;
+}
+
+footer {
+  text-align: center;
+  padding: 25px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 950px) {
+  .overview-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .tabs { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 600px) {
+  main { padding: 22px 14px; }
+  .card { padding: 18px; }
+  .filters { grid-template-columns: 1fr; }
+  .tabs { grid-template-columns: repeat(2, 1fr); }
+  .map-shell { height: 350px; }
+  h1 { font-size: 28px; }
+  .kpi-value { font-size: 24px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="https://www.elginoht.ca/">
+      <img class="logo"
+           src="elgin-oht-logo.png"
+           alt="Elgin Ontario Health Team">
+    </a>
+    <div class="muted">Neighbourhood Profiles</div>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <div class="eyebrow">Population Health Insights</div>
+  <h1>Elgin OHT Neighbourhood Profiles</h1>
+  <p class="muted">
+    Explore local population health indicators,
+    view geographic boundaries and compare
+    communities across Elgin.
+  </p>
+</section>
+
+<section class="section card">
+  <h3>Explore Your Community</h3>
+
+  <div class="filters">
+    <div>
+      <label for="geoLevel">Geographic Level</label>
+      <select id="geoLevel">
+        <option value="fsa">Forward Sortation Area (FSA)</option>
+        <option value="csd">Census Subdivision (CSD)</option>
+        <option value="overall">Elgin Overall</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="areaSelect">Select Neighbourhood</label>
+      <select id="areaSelect"></select>
+    </div>
+
+    <div>
+      <label for="compareSelect">Compare With</label>
+      <select id="compareSelect"></select>
+    </div>
+  </div>
+
+  <p class="note" id="selectionSummary">Loading data...</p>
+</section>
+
+<section class="section">
+  <h2>Community Snapshot</h2>
+  <p class="muted">
+    Selected population and primary care access indicators.
+  </p>
+  <div class="kpi-grid" id="kpiGrid"></div>
+</section>
+
+<section class="section">
+  <h2>Explore the Neighbourhood</h2>
+  <p class="muted">
+    View geographic boundaries and compare population health indicators.
+  </p>
+
+  <div class="overview-grid">
+
+    <article class="card">
+      <h3>Interactive Neighbourhood Map</h3>
+      <p class="muted">
+        Click a geographic area to explore its population
+        and health indicators.
+      </p>
+
+      <div class="map-shell">
+        <div id="neighbourhoodMap"></div>
+      </div>
+
+      <div class="legend">
+        <span class="legend-dot" id="legendSquare"></span>
+        <span id="legendText">FSA boundaries</span>
+      </div>
+
+      <p class="map-status" id="mapStatus">
+        Loading map...
+      </p>
+    </article>
+
+    <article class="card">
+      <h3>Neighbourhood Comparison</h3>
+      <p class="muted">
+        Compare available indicator values between
+        two selected neighbourhoods.
+      </p>
+
+      <div style="margin-top:25px">
+        <label for="comparisonIndicator">Select Indicator</label>
+        <select id="comparisonIndicator">
+          <option value="">Choose an indicator</option>
+        </select>
+      </div>
+
+      <div class="comparison-chart" id="comparisonChart">
+        Select two neighbourhoods and an indicator to compare.
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section class="section">
+  <h2>Explore Health Indicators</h2>
+  <p class="muted">
+    Browse the data available for your selected geography.
+  </p>
+
+  <div class="tabs">
+    <button class="tab active" data-section="Population & Access">
+      Population &amp; Access
+    </button>
+    <button class="tab" data-section="Demographics & Equity">
+      Demographics &amp; Equity
+    </button>
+    <button class="tab" data-section="Chronic Disease">
+      Chronic Disease
+    </button>
+    <button class="tab" data-section="Mental Health">
+      Mental Health
+    </button>
+    <button class="tab" data-section="Social Needs">
+      Social Needs
+    </button>
+  </div>
+
+  <div class="card">
+    <h3 id="categoryTitle">Population &amp; Access</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Indicator</th>
+            <th>Value</th>
+            <th>Period</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody id="indicatorRows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Elgin Ontario Health Team · Neighbourhood Profiles
+  <br>
+  Data availability and geographic coverage vary by indicator.
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+const FILES = {
+  fsa: "fsa_boundaries.geojson",
+  csd: "csd_boundaries.geojson"
+};
+
+const COLOURS = {
+  fsa: "#6c3f99",
+  csd: "#39b54a"
+};
+
+const AREAS = {
+  fsa: ["N5H", "N5P", "N5L", "N5R", "N0J", "N0L", "N0M"],
+  csd: [
+    "Aylmer",
+    "Central Elgin",
+    "Dutton/Dunwich",
+    "Malahide",
+    "Southwold",
+    "St. Thomas",
+    "West Elgin",
+    "Bayham"
+  ]
+};
+
+let records = [];
+let geography = [];
+let map = null;
+let boundaryLayer = null;
+let activeSection = "Population & Access";
+let requestId = 0;
+
+const boundaryCache = {};
+
+function normalize(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function option(value, text) {
+  const element = document.createElement("option");
+  element.value = value;
+  element.textContent = text;
+  return element;
+}
+
+function getAreas(level) {
+  if (level === "overall") return ["ELGIN"];
+
+  const fromData = geography
+    .filter(g => normalize(g.type) === normalize(level))
+    .map(g => g.code)
+    .filter(Boolean);
+
+  return fromData.length
+    ? [...new Set(fromData)]
+    : AREAS[level];
+}
+
+function areaName(code) {
+  const item = geography.find(g => g.code === code);
+  return item?.name || code;
+}
+
+function selectedArea() {
+  return $("areaSelect").value || "ELGIN";
+}
+
+function areaRecords(area) {
+  return records.filter(r => r.geography === area);
+}
+
+function isPresent(value) {
+  return value !== null &&
+         value !== undefined &&
+         value !== "";
+}
+
+function formatValue(record) {
+  if (!record || !isPresent(record.value)) return "N/A";
+
+  const value = Number(record.value);
+  const unit = String(record.unit || "").toLowerCase();
+
+  if (!Number.isFinite(value)) {
+    return String(record.value);
+  }
+
+  if (unit.includes("percent") || unit === "%") {
+    const percent = Math.abs(value) <= 1 ? value * 100 : value;
+    return percent.toLocaleString("en-CA", {
+      maximumFractionDigits: 1
+    }) + "%";
+  }
+
+  return value.toLocaleString("en-CA", {
+    maximumFractionDigits: 2
+  });
+}
+
+function populateAreas() {
+  const level = $("geoLevel").value;
+  const areas = getAreas(level);
+
+  $("areaSelect").replaceChildren();
+  $("compareSelect").replaceChildren();
+
+  $("compareSelect").append(option("", "No comparison"));
+
+  if (level === "overall") {
+    $("areaSelect").append(option("ELGIN", "Elgin Overall"));
+    $("compareSelect").disabled = true;
+  } else {
+    $("areaSelect").append(
+      option("", "All " + level.toUpperCase() + "s (Elgin overview)")
+    );
+
+    areas.forEach(area => {
+      const label = area + " — " + areaName(area);
+      $("areaSelect").append(option(area, label));
+      $("compareSelect").append(option(area, label));
+    });
+
+    $("compareSelect").disabled = false;
+  }
+
+  renderDashboard();
+  loadBoundaries();
+}
+
+function renderKpis() {
+  const data = areaRecords(selectedArea())
+    .filter(r => r.section === "Population & Access");
+
+  const priorities = [
+    "Total Population",
+    "Unattached Population",
+    "Attributed Population",
+    "Unattached Rate"
+  ];
+
+  const available = [...new Set(data.map(r => r.indicator))];
+
+  const indicators = [
+    ...priorities.filter(x => available.includes(x)),
+    ...available.filter(x => !priorities.includes(x))
+  ].slice(0, 4);
+
+  $("kpiGrid").replaceChildren();
+
+  while (indicators.length < 4) indicators.push("");
+
+  indicators.forEach(indicator => {
+    const record = data.find(
+      r => r.indicator === indicator && isPresent(r.value)
+    );
+
+    const card = document.createElement("div");
+    card.className = "kpi";
+
+    const label = document.createElement("div");
+    label.className = "kpi-label";
+    label.textContent = indicator || "Additional indicator";
+
+    const value = document.createElement("div");
+    value.className = "kpi-value";
+    value.textContent = formatValue(record);
+
+    const period = document.createElement("div");
+    period.className = "kpi-period";
+    period.textContent = record?.period || "No data available";
+
+    card.append(label, value, period);
+    $("kpiGrid").append(card);
+  });
+}
+
+function renderTable() {
+  $("categoryTitle").textContent = activeSection;
+
+  const data = areaRecords(selectedArea())
+    .filter(r => r.section === activeSection);
+
+  $("indicatorRows").replaceChildren();
+
+  if (!data.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 4;
+    cell.textContent = "No data available for this category.";
+    row.append(cell);
+    $("indicatorRows").append(row);
+    return;
+  }
+
+  data.forEach(record => {
+    const row = document.createElement("tr");
+
+    const indicator = [
+      record.indicator,
+      record.condition,
+      record.age_group,
+      record.sex
+    ].filter(Boolean).join(" · ");
+
+    [
+      indicator,
+      formatValue(record),
+      record.period || "—",
+      record.source || "—"
+    ].forEach(text => {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      row.append(cell);
+    });
+
+    $("indicatorRows").append(row);
+  });
+}
+
+function getComparableRecords() {
+  const first = selectedArea();
+  const second = $("compareSelect").value;
+
+  if (!second || first === "ELGIN" || first === second) {
+    return [];
+  }
+
+  const firstRecords = areaRecords(first);
+  const secondRecords = areaRecords(second);
+
+  return firstRecords.filter(r =>
+    isPresent(r.value) &&
+    secondRecords.some(other =>
+      other.indicator_id === r.indicator_id &&
+      isPresent(other.value)
+    )
+  );
+}
+
+function renderComparisonOptions() {
+  const select = $("comparisonIndicator");
+  const previous = select.value;
+  const comparable = getComparableRecords();
+
+  const unique = new Map();
+
+  comparable.forEach(record => {
+    if (!unique.has(record.indicator_id)) {
+      unique.set(record.indicator_id, record);
+    }
+  });
+
+  select.replaceChildren(option("", "Choose an indicator"));
+
+  unique.forEach(record => {
+    select.append(
+      option(record.indicator_id, record.indicator)
+    );
+  });
+
+  if (unique.has(previous)) select.value = previous;
+
+  renderComparison();
+}
+
+function renderComparison() {
+  const holder = $("comparisonChart");
+  holder.replaceChildren();
+
+  const first = selectedArea();
+  const second = $("compareSelect").value;
+  const indicatorId = $("comparisonIndicator").value;
+
+  if (!second || first === "ELGIN" || first === second) {
+    holder.textContent =
+      "Select two different neighbourhoods to compare.";
+    return;
+  }
+
+  if (!indicatorId) {
+    holder.textContent =
+      "Choose an indicator to view the comparison.";
+    return;
+  }
+
+  const a = areaRecords(first).find(
+    r => r.indicator_id === indicatorId
+  );
+
+  const b = areaRecords(second).find(
+    r => r.indicator_id === indicatorId
+  );
+
+  if (!a || !b) {
+    holder.textContent = "Comparable data is unavailable.";
+    return;
+  }
+
+  const maximum = Math.max(
+    Math.abs(Number(a.value)),
+    Math.abs(Number(b.value)),
+    0.000001
+  );
+
+  [[first, a, false], [second, b, true]].forEach(
+    ([name, record, green]) => {
+      const row = document.createElement("div");
+      row.className = "compare-row";
+
+      const title = document.createElement("div");
+      title.className = "compare-title";
+
+      const left = document.createElement("span");
+      left.textContent = name;
+
+      const right = document.createElement("span");
+      right.textContent = formatValue(record);
+
+      title.append(left, right);
+
+      const track = document.createElement("div");
+      track.className = "track";
+
+      const fill = document.createElement("div");
+      fill.className = green ? "fill green" : "fill";
+      fill.style.width =
+        Math.abs(Number(record.value)) / maximum * 100 + "%";
+
+      track.append(fill);
+      row.append(title, track);
+      holder.append(row);
+    }
+  );
+
+  const note = document.createElement("p");
+  note.className = "note";
+  note.textContent =
+    "Compare values only when reporting periods and indicator definitions are consistent.";
+  holder.append(note);
+}
+
+function renderDashboard() {
+  const area = selectedArea();
+
+  $("selectionSummary").textContent =
+    "Selected geography: " +
+    (area === "ELGIN" ? "Elgin Overall" : areaName(area));
+
+  renderKpis();
+  renderTable();
+  renderComparisonOptions();
+  styleBoundaries();
+}
+
+/* LEAFLET MAP */
+
+function initMap() {
+  if (map || typeof L === "undefined") return;
+
+  map = L.map("neighbourhoodMap", {
+    preferCanvas: true,
+    scrollWheelZoom: false,
+    zoomAnimation: false,
+    fadeAnimation: false,
+    markerZoomAnimation: false,
+    maxZoom: 15
+  }).setView([42.78, -81.05], 10);
+
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 18,
+      updateWhenIdle: true,
+      keepBuffer: 2
+    }
+  ).addTo(map);
+
+  window.addEventListener("resize", () => {
+    map.invalidateSize({ pan: false });
+  });
+}
+
+function boundaryName(feature, level) {
+  const properties = feature.properties || {};
+
+  const keys = level === "fsa"
+    ? ["CFSAUID", "CFSA", "FSA", "fsa", "code"]
+    : ["CSDNAME", "CSD_NAME", "name", "NAME", "code"];
+
+  for (const key of keys) {
+    if (properties[key] !== undefined) {
+      return String(properties[key]);
+    }
+  }
+
+  return "";
+}
+
+function matchArea(name, level) {
+  return getAreas(level).find(
+    area => normalize(area) === normalize(name)
+  ) || null;
+}
+
+function styleBoundaries() {
+  if (!boundaryLayer) return;
+
+  const level = $("geoLevel").value;
+  const selected = $("areaSelect").value;
+  const colour = COLOURS[level] || COLOURS.fsa;
+
+  boundaryLayer.eachLayer(layer => {
+    const name = boundaryName(layer.feature, level);
+    const area = matchArea(name, level);
+    const active = Boolean(selected) && area === selected;
+
+    layer.setStyle({
+      color: colour,
+      weight: active ? 3 : 1.5,
+      fillColor: colour,
+      fillOpacity: active ? 0.30 : 0.10
+    });
+  });
+}
+
+async function loadBoundaries() {
+  const currentRequest = ++requestId;
+  const level = $("geoLevel").value;
+
+  if (!map) {
+    $("mapStatus").textContent =
+      "Map unavailable. Leaflet could not load.";
+    return;
+  }
+
+  if (boundaryLayer) {
+    map.removeLayer(boundaryLayer);
+    boundaryLayer = null;
+  }
+
+  if (level === "overall") {
+    $("mapStatus").textContent =
+      "Select FSA or CSD to display boundaries.";
+    return;
+  }
+
+  $("legendSquare").style.background = COLOURS[level];
+  $("legendText").textContent =
+    level.toUpperCase() + " boundaries";
+
+  $("mapStatus").textContent = "Loading boundaries...";
+
+  try {
+    if (!boundaryCache[level]) {
+      const response = await fetch(FILES[level]);
+
+      if (!response.ok) {
+        throw new Error("Boundary file not found.");
+      }
+
+      boundaryCache[level] = await response.json();
+    }
+
+    if (currentRequest !== requestId) return;
+
+    const geojson = boundaryCache[level];
+
+    if (!geojson.features?.length) {
+      throw new Error("No geographic features found.");
+    }
+
+    boundaryLayer = L.geoJSON(geojson, {
+      renderer: L.canvas({ padding: 0.25 }),
+      smoothFactor: 2,
+
+      style: {
+        color: COLOURS[level],
+        weight: 1.5,
+        fillColor: COLOURS[level],
+        fillOpacity: 0.10
+      },
+
+      onEachFeature(feature, layer) {
+        const name = boundaryName(feature, level);
+
+        if (!name) return;
+
+        layer.bindTooltip(name, { sticky: false });
+
+        layer.on("click", () => {
+          const matched = matchArea(name, level);
+
+          if (matched) {
+            $("areaSelect").value = matched;
+            renderDashboard();
+          } else {
+            $("mapStatus").textContent =
+              "No dashboard data matched " + name;
+          }
+        });
+      }
+    }).addTo(map);
+
+    const bounds = boundaryLayer.getBounds();
+
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, {
+        padding: [20, 20],
+        maxZoom: 11,
+        animate: false
+      });
+    }
+
+    map.invalidateSize({ pan: false });
+    styleBoundaries();
+
+    $("mapStatus").textContent =
+      "Click a boundary to view its health indicators.";
+
+  } catch (error) {
+    if (currentRequest !== requestId) return;
+
+    $("mapStatus").textContent =
+      "Map error: " + error.message;
+
+    console.error(error);
+  }
+}
+
+/* START DASHBOARD */
+
+async function start() {
+  try {
+    const response = await fetch(
+      "elgin_dashboard_data.json",
+      { cache: "no-cache" }
+    );
+
+    if (!response.ok) {
+      throw new Error("Dashboard data file not found.");
+    }
+
+    const data = await response.json();
+
+    records = Array.isArray(data.records)
+      ? data.records
+      : [];
+
+    geography = Array.isArray(data.geography)
+      ? data.geography
+      : [];
+
+  } catch (error) {
+    console.error(error);
+    $("selectionSummary").textContent =
+      "Unable to load dashboard data: " + error.message;
+  }
+
+  initMap();
+  populateAreas();
+}
+
+$("geoLevel").addEventListener("change", populateAreas);
+
+$("areaSelect").addEventListener("change", renderDashboard);
+
+$("compareSelect").addEventListener("change", renderDashboard);
+
+$("comparisonIndicator").addEventListener(
+  "change",
+  renderComparison
+);
+
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click", () => {
+    activeSection = button.dataset.section;
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.classList.toggle("active", tab === button);
+    });
+
+    renderTable();
+  });
+});
+
+start();
+</script>
+
+</body>
+</html>
